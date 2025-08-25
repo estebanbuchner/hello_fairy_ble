@@ -1,4 +1,4 @@
-ls """Hello Fairy BLE integration."""
+"""Hello Fairy BLE integration."""
 
 import logging
 from homeassistant.core import HomeAssistant

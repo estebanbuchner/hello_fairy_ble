@@ -12,6 +12,8 @@ class HelloFairyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         errors = {}
+
+        # Si el usuario ya envió datos, validar conexión
         if user_input is not None:
             mac = user_input["mac"]
             name = user_input["name"]
@@ -24,8 +26,23 @@ class HelloFairyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await device.disconnect()
                 return self.async_create_entry(title=name, data=user_input)
 
+        # Descubrir dispositivos BLE
         devices = await HelloFairyBLE.discover_devices()
-        choices = {d.address: d.name for d in devices if DEVICE_NAME_PREFIX in d.name}
+
+        # Si no se detectan dispositivos, mostrar mensaje y formulario vacío
+        if not devices:
+            errors["base"] = "no_devices_found"
+            return self.async_show_form(
+                step_id="user",
+                data_schema=vol.Schema({}),
+                errors=errors,
+                description_placeholders={
+                    "note": "Asegurate de que las luces estén encendidas y cerca del adaptador BLE"
+                }
+            )
+
+        # Construir opciones si hay dispositivos disponibles
+        choices = {d.address: d.name for d in devices if d.name and DEVICE_NAME_PREFIX in d.name}
 
         schema = vol.Schema({
             vol.Required("mac"): vol.In(choices),
@@ -43,8 +60,6 @@ class HelloFairyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    ...
-
     def __init__(self, config_entry):
         self.config_entry = config_entry
 

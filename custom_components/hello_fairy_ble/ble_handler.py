@@ -69,3 +69,21 @@ class HelloFairyBLE:
             2: (p, v, t),
             3: (p, q, v),
             4: (t, p, v),
+            5: (v, p, q),
+        }
+        r, g, b = rgb_map[i]
+        return [int(r * 255), int(g * 255), int(b * 255)]
+
+
+    @staticmethod
+    async def discover_devices():
+        """Scan for Hello Fairy devices."""
+        try:
+            devices = await BleakScanner.discover()
+            filtered = [d for d in devices if d.name and DEVICE_NAME_PREFIX in d.name]
+            if not filtered:
+                _LOGGER.warning("No Hello Fairy BLE devices found during scan.")
+            return filtered
+        except Exception as e:
+            _LOGGER.error(f"BLE scan failed: {e}")
+            return []

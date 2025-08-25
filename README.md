@@ -1,7 +1,48 @@
-# hello_fairy_ble
+# Hello Fairy BLE
+
 Proyecto de componente custom para Home Assistant. El objetivo será implementar la conectividad con luces de navidad Hello Fairy  usando la API BLE de Home Assistant sensores y switches.
 Esta basado en la integracion realizara para esphome: https://community.home-assistant.io/t/control-hello-fairy-ble-string-lights-with-esphome/818595
 
+
+## Características
+
+- Control local vía BLE (sin nube)
+- Encendido/apagado, color HSV, brillo
+- Efectos predefinidos (Rainbow, Pulse, etc.)
+- Reconexión automática y validación de disponibilidad
+- Configuración desde la UI (config_flow)
+
+## Instalación
+
+1. Copiar la carpeta `hello_fairy_ble` dentro de `custom_components/`
+2. Reiniciar Home Assistant
+3. Ir a **Configuración → Dispositivos e Integraciones → Agregar**
+4. Buscar “Hello Fairy BLE” y seguir el asistente
+
+
+## 🧪 Requisitos
+
+- Home Assistant 2024.6 o superior
+- Python ≥ 3.10
+- Adaptador BLE compatible (probado con dongles USB y chipsets integrados)
+- Paquete `bleak==0.21.1`
+
+##  Uso
+
+Una vez configurado, se crea una entidad `light.hello_fairy_<nombre>`. Desde la UI podés:
+
+- Cambiar color y brillo
+- Aplicar efectos
+- Ver disponibilidad del dispositivo
+
+## Troubleshooting
+
+| Problema | Solución |
+|---------|----------|
+| No aparece en el escaneo | Verificar que el dispositivo esté encendido y cerca |
+| Error “cannot_connect” | Probar con otro adaptador BLE o reiniciar Home Assistant |
+| No responde a comandos | Validar logs y revisar reconexión automática |
+| Efectos no aplican | Confirmar que el preset esté soportado por el firmware |
 
 
 # Funcionalidades Incluidas

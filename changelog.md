@@ -6,3 +6,6 @@
 
 ## [0.1.1] - 2025-08-25
 - Correccion de errores
+
+## [0.1.2] - 2025-08-25
+- Correccion de errores segunda parte

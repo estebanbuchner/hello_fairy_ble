@@ -14,3 +14,6 @@
 - Arega log de los dispositivos encontrados
 - Corrije nombre del prefijo 
 - soluciona problema de conexion
+
+## [0.1.4] - 2025-08-25
+- Problema con entidad light que no carga

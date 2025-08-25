@@ -7,6 +7,12 @@ from homeassistant.components.light import (
 from .ble_handler import HelloFairyBLE
 from .const import SUPPORTED_EFFECTS
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from .const import DOMAIN
+
+
 _LOGGER = logging.getLogger(__name__)
 
 class HelloFairyLight(LightEntity):
@@ -78,3 +84,17 @@ class HelloFairyLight(LightEntity):
     async def async_update(self):
         await self._device.reconnect_if_needed()
         self._available = self._device.connected
+
+
+    async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback):
+        """Set up Hello Fairy light from a config entry."""
+        data = entry.data
+        mac = data.get("mac")
+        name = data.get("name", "Hello Fairy")
+
+        if not mac:
+            _LOGGER.error("MAC address missing in config entry")
+            return
+
+        entity = HelloFairyLight(mac, name)
+        async_add_entities([entity], update_before_add=True)

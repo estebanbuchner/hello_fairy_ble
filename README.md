@@ -2,23 +2,7 @@
 Proyecto de componente custom para Home Assistant. El objetivo será implementar la conectividad con luces de navidad Hello Fairy  usando la API BLE de Home Assistant sensores y switches.
 Esta basado en la integracion realizara para esphome: https://community.home-assistant.io/t/control-hello-fairy-ble-string-lights-with-esphome/818595
 
-## Estructura del proyecto
 
-``` 
-custom_components/
-└── hello_fairy_ble/
-    ├── __init__.py
-    ├── manifest.json
-    ├── const.py
-    ├── ble_handler.py
-    ├── light.py
-    ├── sensor.py
-    ├── switch.py
-    ├── config_flow.py
-    ├── translations/
-    │   └── en.json
-    └── services.yaml
-``` 
 
 # Funcionalidades Incluidas
 ## Light Entity
@@ -46,11 +30,53 @@ custom_components/
 * Guardado de MAC y configuración
 * Inicialización de entidades
 
+# Instalación vía HACS
+Una vez generado el proyecto, lo vas a poder subir a GitHub y agregarlo como repositorio custom en HACS. Desde ahí, se instala como cualquier otra integración.
+
 # Validación Técnica
 * Se usará bleak para manejar la conexión BLE
 * Se replicarán los comandos sendhsv, sendpatt y el ACK parsing
 * Se convertirá HSV a RGB usando la lógica del script hsv2rgb del archivo adjunto
 * Se expondrán los presets como select o number según convenga
 
-# Instalación vía HACS
-Una vez generado el proyecto, lo vas a poder subir a GitHub y agregarlo como repositorio custom en HACS. Desde ahí, se instala como cualquier otra integración.
+
+## Componentes
+
+### Estructura del proyecto
+
+``` 
+custom_components/
+└── hello_fairy_ble/
+    ├── __init__.py
+    ├── manifest.json
+    ├── const.py
+    ├── ble_handler.py
+    ├── light.py
+    ├── sensor.py
+    ├── switch.py
+    ├── config_flow.py
+    ├── translations/
+    │   └── en.json
+    └── services.yaml
+``` 
+### Lógica principal (ble_handler.py)
+* Maneja conexión BLE con bleak o HaBleakClientWrapper
+* Detecta dispositivos Hello Fairy por nombre o UUID
+* Reintenta conexión si se pierde
+* Expone métodos como send_hsv, send_preset, read_command
+
+### Entidad de luz (light.py)
+* Encendido/apagado
+* Brillo (si el dispositivo lo soporta)
+* Color HSV → RGB (usando la lógica del archivo adjunto)
+* Selección de escena/preset como select o number
+
+ ### Sensores (sensor.py)
+* binary_sensor.hello_fairy_connected: estado de conexión
+* sensor.hello_fairy_remote_command: último comando IR recibido
+
+### Configuración (config_flow.py)
+* Escaneo BLE inicial
+* Selección de dispositivo por MAC
+* Timeout configurable
+* Visualización de MAC en la UI

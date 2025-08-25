@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from bleak import BleakClient, BleakScanner
+from bleak.exc import BleakCharacteristicNotFoundError
 from .const import CHARACTERISTIC_UUID, DEVICE_NAME_PREFIX, DEFAULT_TIMEOUT
 
 _LOGGER = logging.getLogger(__name__)
@@ -13,12 +14,10 @@ class HelloFairyBLE:
         self.connected = False
         self.last_command = None
 
-    # Fase 0.1.0: Helper defensivo para compatibilidad con HA
     async def safe_is_connected(self):
         estado = self.client.is_connected
         return await estado() if callable(estado) else estado
 
-    # Fase 0.1.1: Conexión con timeout y validación de estado
     async def connect(self):
         try:
             _LOGGER.debug(f"Intentando conectar con {self.mac}")
@@ -27,18 +26,16 @@ class HelloFairyBLE:
             self.connected = await self.safe_is_connected()
             _LOGGER.info(f"Conectado a Hello Fairy: {self.mac} → {self.connected}")
 
-            # Fase 0.1.2: Validación de servicios BLE
             if self.connected:
-                services = self.client.services
-                if not services or not hasattr(services, "services") or len(services.services) == 0:
-                    _LOGGER.warning(f"{self.mac} conectado pero sin servicios disponibles")
-                    self.connected = False
-                    return False
+                await self.client.get_services()
+                for service in self.client.services:
+                    _LOGGER.debug(f"Servicio: {service.uuid}")
+                    for char in service.characteristics:
+                        _LOGGER.debug(f"  Char: {char.uuid} → {char.properties}")
 
-                # Fase 0.1.3: Validación de características
                 has_characteristics = any(
                     hasattr(s, "characteristics") and len(s.characteristics) > 0
-                    for s in services.services.values()
+                    for s in self.client.services
                 )
                 if not has_characteristics:
                     _LOGGER.warning(f"{self.mac} conectado pero sin características en los servicios")
@@ -57,7 +54,6 @@ class HelloFairyBLE:
             self.connected = False
             return False
 
-    # Fase 0.2.0: Desconexión segura
     async def disconnect(self):
         try:
             if await self.safe_is_connected():
@@ -68,13 +64,23 @@ class HelloFairyBLE:
         finally:
             self.connected = False
 
-    # Fase 0.3.0: Reconexión si es necesario
     async def reconnect_if_needed(self):
         if not await self.safe_is_connected():
             _LOGGER.warning("Desconectado. Intentando reconexión...")
             await self.connect()
 
-    # Fase 1.0.0: Envío de comando HSV
+    async def resolve_characteristic(self):
+        try:
+            await self.client.get_services()
+            for service in self.client.services:
+                for char in service.characteristics:
+                    if "write" in char.properties:
+                        _LOGGER.debug(f"Característica candidata: {char.uuid}")
+                        return char.uuid
+        except Exception:
+            _LOGGER.exception("Error al resolver característica BLE")
+        return None
+
     async def send_hsv(self, h, s, v):
         if not await self.safe_is_connected():
             _LOGGER.warning("No conectado. Comando HSV no enviado.")
@@ -82,20 +88,40 @@ class HelloFairyBLE:
 
         rgb = self.hsv_to_rgb(h, s, v)
         payload = bytearray([0x7e, 0x00, 0x05, 0x03] + rgb + [0xef])
-        await self.client.write_gatt_char(CHARACTERISTIC_UUID, payload)
-        _LOGGER.debug(f"Sent HSV: {h},{s},{v} → RGB {rgb}")
 
-    # Fase 1.1.0: Envío de preset
+        try:
+            await self.client.write_gatt_char(CHARACTERISTIC_UUID, payload)
+        except BleakCharacteristicNotFoundError:
+            _LOGGER.warning(f"UUID fijo falló: {CHARACTERISTIC_UUID}")
+            dynamic_uuid = await self.resolve_characteristic()
+            if dynamic_uuid:
+                _LOGGER.warning(f"Usando UUID dinámico: {dynamic_uuid}")
+                await self.client.write_gatt_char(dynamic_uuid, payload)
+            else:
+                _LOGGER.error("No se pudo resolver UUID dinámico para HSV")
+        else:
+            _LOGGER.debug(f"Sent HSV: {h},{s},{v} → RGB {rgb}")
+
     async def send_preset(self, preset_id):
         if not await self.safe_is_connected():
             _LOGGER.warning("No conectado. Comando preset no enviado.")
             return
 
         payload = bytearray([0x7e, 0x00, 0x05, 0x04, preset_id, 0x00, 0xef])
-        await self.client.write_gatt_char(CHARACTERISTIC_UUID, payload)
-        _LOGGER.debug(f"Sent preset ID: {preset_id}")
 
-    # Fase 2.0.0: Lectura de comando remoto
+        try:
+            await self.client.write_gatt_char(CHARACTERISTIC_UUID, payload)
+        except BleakCharacteristicNotFoundError:
+            _LOGGER.warning(f"UUID fijo falló: {CHARACTERISTIC_UUID}")
+            dynamic_uuid = await self.resolve_characteristic()
+            if dynamic_uuid:
+                _LOGGER.warning(f"Usando UUID dinámico: {dynamic_uuid}")
+                await self.client.write_gatt_char(dynamic_uuid, payload)
+            else:
+                _LOGGER.error("No se pudo resolver UUID dinámico para preset")
+        else:
+            _LOGGER.debug(f"Sent preset ID: {preset_id}")
+
     async def read_remote_command(self):
         if not await self.safe_is_connected():
             _LOGGER.warning("No conectado. Lectura remota no disponible.")
@@ -108,7 +134,6 @@ class HelloFairyBLE:
         except Exception as e:
             _LOGGER.warning(f"Failed to read remote command: {e}")
 
-    # Fase 3.0.0: Conversión HSV → RGB
     def hsv_to_rgb(self, h, s, v):
         h = float(h)
         s = float(s) / 100
@@ -129,7 +154,6 @@ class HelloFairyBLE:
         r, g, b = rgb_map[i]
         return [int(r * 255), int(g * 255), int(b * 255)]
 
-    # Fase 4.0.0: Escaneo BLE con filtro por nombre
     @staticmethod
     async def discover_devices():
         try:

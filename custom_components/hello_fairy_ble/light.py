@@ -1,17 +1,14 @@
 import logging
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS, ATTR_HS_COLOR, ATTR_EFFECT,
-    SUPPORT_BRIGHTNESS, SUPPORT_COLOR, SUPPORT_EFFECT,
-    LightEntity
+    ColorMode, LightEntityFeature, LightEntity
 )
-from .ble_handler import HelloFairyBLE
-from .const import SUPPORTED_EFFECTS
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from .const import DOMAIN
 
+from .ble_handler import HelloFairyBLE
+from .const import SUPPORTED_EFFECTS, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,9 +23,31 @@ class HelloFairyLight(LightEntity):
         self._available = False
         self._device = HelloFairyBLE(mac)
 
+        self._attr_name = name
+        self._attr_supported_color_modes = [ColorMode.HS]
+        self._attr_color_mode = ColorMode.HS
+        self._attr_supported_features = LightEntityFeature.EFFECT
+        self._attr_effect_list = SUPPORTED_EFFECTS
+        self._attr_unique_id = f"hello_fairy_{mac.replace(':', '')}"
+
+
     @property
-    def name(self):
-        return self._name
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._mac)},
+            "name": self._name,
+            "manufacturer": "Hello Fairy",
+            "connections": {("bluetooth", self._mac)},
+        }
+
+    @property
+    def color_mode(self):
+        return ColorMode.HS
+
+    @property
+    def supported_color_modes(self):
+        return [ColorMode.HS]
+
 
     @property
     def is_on(self):
@@ -47,16 +66,8 @@ class HelloFairyLight(LightEntity):
         return self._effect
 
     @property
-    def effect_list(self):
-        return SUPPORTED_EFFECTS
-
-    @property
     def available(self):
         return self._available
-
-    @property
-    def supported_features(self):
-        return SUPPORT_BRIGHTNESS | SUPPORT_COLOR | SUPPORT_EFFECT
 
     async def async_turn_on(self, **kwargs):
         await self._device.reconnect_if_needed()
@@ -85,16 +96,15 @@ class HelloFairyLight(LightEntity):
         await self._device.reconnect_if_needed()
         self._available = self._device.connected
 
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback):
+    """Set up Hello Fairy light from a config entry."""
+    data = entry.data
+    mac = data.get("mac")
+    name = data.get("name", "Hello Fairy")
 
-    async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback):
-        """Set up Hello Fairy light from a config entry."""
-        data = entry.data
-        mac = data.get("mac")
-        name = data.get("name", "Hello Fairy")
+    if not mac:
+        _LOGGER.error("MAC address missing in config entry")
+        return
 
-        if not mac:
-            _LOGGER.error("MAC address missing in config entry")
-            return
-
-        entity = HelloFairyLight(mac, name)
-        async_add_entities([entity], update_before_add=True)
+    entity = HelloFairyLight(mac, name)
+    async_add_entities([entity], update_before_add=True)

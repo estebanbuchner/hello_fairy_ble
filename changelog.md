@@ -17,3 +17,8 @@
 
 ## [0.1.4] - 2025-08-25
 - Problema con entidad light que no carga
+
+## [0.1.5] - 2025-08-25
+- Problema con entidad light que no carga (continuacion)
+- Problema con serivicios que no encuentra
+- Soluciona problemas de compatibilidad

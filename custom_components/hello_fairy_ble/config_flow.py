@@ -39,9 +39,12 @@ class HelloFairyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return HelloFairyOptionsFlowHandler(config_entry)
+        return OptionsFlowHandler(config_entry)
 
-class HelloFairyOptionsFlowHandler(config_entries.OptionsFlow):
+
+class OptionsFlowHandler(config_entries.OptionsFlow):
+    ...
+
     def __init__(self, config_entry):
         self.config_entry = config_entry
 

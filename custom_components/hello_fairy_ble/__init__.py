@@ -1,10 +1,9 @@
-"""Hello Fairy BLE integration."""
+ls """Hello Fairy BLE integration."""
 
 import logging
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.entity_platform import async_add_entities
 from .light import HelloFairyLight
 
 from .const import DOMAIN
@@ -18,10 +17,12 @@ async def async_setup(hass: HomeAssistant, config: dict):
     return True
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    mac = entry.data["mac"]
-    name = entry.data["name"]
-    async_add_entities([HelloFairyLight(mac, name)])
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
+    hass.async_create_task(
+        hass.config_entries.async_forward_entry_setup(entry, "light")
+    )
     return True
+
 
 async def async_unload_entry(hass: HomeAssistant, entry):
     """Unload a config entry."""

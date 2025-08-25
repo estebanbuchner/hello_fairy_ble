@@ -4,6 +4,10 @@ import logging
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers import config_entry_flow
+
+
+
 from .light import HelloFairyLight
 
 from .const import DOMAIN
@@ -19,7 +23,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
     hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "light")
+        config_entry_flow.async_forward_entry_setup(hass, entry, "light")
     )
     return True
 

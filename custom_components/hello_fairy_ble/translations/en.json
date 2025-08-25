@@ -1,0 +1,21 @@
+{
+    "config": {
+      "step": {
+        "user": {
+          "title": "Configure Hello Fairy BLE",
+          "description": "Select a device and assign a name.",
+          "data": {
+            "mac": "Device",
+            "name": "Name"
+          }
+        }
+      },
+      "error": {
+        "cannot_connect": "Failed to connect to the device. Please try again."
+      },
+      "abort": {
+        "already_configured": "This device is already configured."
+      }
+    }
+  }
+  

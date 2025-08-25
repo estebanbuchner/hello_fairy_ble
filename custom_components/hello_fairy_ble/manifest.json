@@ -1,0 +1,10 @@
+  {
+    "domain": "hello_fairy_ble",
+    "name": "Hello Fairy BLE Lights",
+    "documentation": "https://github.com/estebanbuchner/hello_fairy_ble",
+    "dependencies": [],
+    "codeowners": ["@estebanbuchner"],
+    "requirements": ["bleak>=0.21.1"],
+    "version": "0.1.0"
+  }
+  

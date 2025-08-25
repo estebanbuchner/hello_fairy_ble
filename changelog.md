@@ -9,3 +9,8 @@
 
 ## [0.1.2] - 2025-08-25
 - Correccion de errores segunda parte
+
+## [0.1.3] - 2025-08-25
+- Arega log de los dispositivos encontrados
+- Corrije nombre del prefijo 
+- soluciona problema de conexion

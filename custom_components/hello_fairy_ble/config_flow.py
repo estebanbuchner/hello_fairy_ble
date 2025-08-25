@@ -14,7 +14,7 @@ class HelloFairyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         # Si el usuario ya envió datos, validar conexión
-        if user_input is not None:
+        if user_input is not None and "mac" in user_input:
             mac = user_input["mac"]
             name = user_input["name"]
 

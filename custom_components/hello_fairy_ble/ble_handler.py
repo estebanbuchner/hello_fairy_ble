@@ -75,7 +75,7 @@ class HelloFairyBLE:
     async def resolve_characteristic(self):
         if not self.client.services:
             _LOGGER.warning(f"No hay servicios disponibles para {self.mac}")
-           return None
+            return None
 
         try:
             for service in self.client.services:

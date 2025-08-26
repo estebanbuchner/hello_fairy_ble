@@ -29,3 +29,8 @@
 - Solucion a problema que no levanta la integracion.
 - Cambia default time out a 30
 - agrega clase de testing
+
+
+## [0.1.7] - 2025-08-25
+- Corrigen indentacion en pyton que produce erorr al levantar (ya corregido en HA)
+- agrega servicio de testeo

@@ -9,6 +9,7 @@ from homeassistant.helpers import config_entry_flow
 
 
 from .light import HelloFairyLight
+from .ble_handler import HelloFairyBLE  
 
 from .const import DOMAIN
 
@@ -20,11 +21,31 @@ async def async_setup(hass: HomeAssistant, config: dict):
     # Aquí podrías cargar desde YAML si querés soporte legacy
     return True
 
+
+# ⬇️ Función de servicio definida fuera
+async def async_test_light_service(call):
+    mac = call.data.get("mac", "11:11:00:30:4E:14")
+    device = HelloFairyBLE(mac)
+
+    if await device.connect():
+        await device.send_hsv(0, 100, 100)
+        await asyncio.sleep(2)
+        await device.send_hsv(120, 100, 100)
+        await asyncio.sleep(2)
+        await device.send_hsv(240, 100, 100)
+        await device.disconnect()
+    else:
+        _LOGGER.warning(f"No se pudo conectar con {mac}")
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setups(entry, ["light"])
     )
+    
+    hass.services.async_register(DOMAIN, "test_light", async_test_light_service)
+
 
     return True
 
@@ -32,3 +53,5 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 async def async_unload_entry(hass: HomeAssistant, entry):
     """Unload a config entry."""
     return True
+
+

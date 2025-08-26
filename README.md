@@ -14,7 +14,7 @@ Esta basado en la integracion realizara para esphome: https://community.home-ass
 
 ## Instalación
 
-1. Copiar la carpeta `hello_fairy_ble` dentro de `custom_components/`
+1. Agregar repositorio a HACS y descargar componente
 2. Reiniciar Home Assistant
 3. Ir a **Configuración → Dispositivos e Integraciones → Agregar**
 4. Buscar “Hello Fairy BLE” y seguir el asistente
@@ -25,7 +25,7 @@ Esta basado en la integracion realizara para esphome: https://community.home-ass
 - Home Assistant 2024.6 o superior
 - Python ≥ 3.10
 - Adaptador BLE compatible (probado con dongles USB y chipsets integrados)
-- Paquete `bleak==0.21.1`
+- Paquete `bleak>=0.21.1`
 
 ##  Uso
 
@@ -47,17 +47,24 @@ Una vez configurado, se crea una entidad `light.hello_fairy_<nombre>`. Desde la 
 
 # Funcionalidades Incluidas
 ## Light Entity
+### Funcionando
 * Encendido/apagado
-* Control de brillo
+### Pendiente
+* Control de brillo )
 * Control de color (HSV → RGB)
 * Selección de presets (efectos)
-* Reenvío de comandos BLE
+
+
 
 ## Sensor de Conectividad
-* binary_sensor.hello_fairy_connected: indica si el dispositivo está conectado
+### Funcionando
 * Reconexión automática si se pierde la conexión
 
-## Sensor de Comando IR
+### Pendiente
+* binary_sensor.hello_fairy_connected: indica si el dispositivo está conectado
+* Multiples luces
+
+## Sensor de Comando IR (Pendiente)
 * sensor.hello_fairy_remote_command: muestra el último comando recibido desde el control remoto
 
 ## Configuración desde UI
@@ -71,8 +78,6 @@ Una vez configurado, se crea una entidad `light.hello_fairy_<nombre>`. Desde la 
 * Guardado de MAC y configuración
 * Inicialización de entidades
 
-# Instalación vía HACS
-Una vez generado el proyecto, lo vas a poder subir a GitHub y agregarlo como repositorio custom en HACS. Desde ahí, se instala como cualquier otra integración.
 
 # Validación Técnica
 * Se usará bleak para manejar la conexión BLE

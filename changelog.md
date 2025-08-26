@@ -31,6 +31,16 @@
 - agrega clase de testing
 
 
-## [0.1.7] - 2025-08-25
+## [0.1.7] - 2025-08-26
 - Corrigen indentacion en pyton que produce erorr al levantar (ya corregido en HA)
 - agrega servicio de testeo
+
+
+## [0.1.8] - 2025-08-26
+- Agrega comando de encendido y apagado
+- elimina llamado deprecado
+- Soluciona problema de presets y colores (en proceso)
+
+
+
+

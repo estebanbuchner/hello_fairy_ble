@@ -1,5 +1,5 @@
 """Hello Fairy BLE integration."""
-
+import asyncio
 import logging
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.discovery import async_load_platform
@@ -28,11 +28,14 @@ async def async_test_light_service(call):
     device = HelloFairyBLE(mac)
 
     if await device.connect():
+        await device.send_power(True)
         await device.send_hsv(0, 100, 100)
         await asyncio.sleep(2)
         await device.send_hsv(120, 100, 100)
         await asyncio.sleep(2)
         await device.send_hsv(240, 100, 100)
+        await asyncio.sleep(2)
+        await device.send_power(False)
         await device.disconnect()
     else:
         _LOGGER.warning(f"No se pudo conectar con {mac}")
@@ -40,14 +43,13 @@ async def async_test_light_service(call):
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setups(entry, ["light"])
-    )
-    
+
+    await hass.config_entries.async_forward_entry_setups(entry, ["light"])
+
     hass.services.async_register(DOMAIN, "test_light", async_test_light_service)
 
-
     return True
+
 
 
 async def async_unload_entry(hass: HomeAssistant, entry):

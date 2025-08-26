@@ -24,7 +24,7 @@ class HelloFairyLight(LightEntity):
         self._device = HelloFairyBLE(mac)
 
         self._attr_name = name
-        self._attr_supported_color_modes = [ColorMode.HS]
+        self._attr_supported_color_modes = {ColorMode.HS}
         self._attr_color_mode = ColorMode.HS
         self._attr_supported_features = LightEntityFeature.EFFECT
         self._attr_effect_list = SUPPORTED_EFFECTS
@@ -46,7 +46,8 @@ class HelloFairyLight(LightEntity):
 
     @property
     def supported_color_modes(self):
-        return [ColorMode.HS]
+        return {ColorMode.HS}
+
 
 
     @property
@@ -71,26 +72,33 @@ class HelloFairyLight(LightEntity):
 
     async def async_turn_on(self, **kwargs):
         await self._device.reconnect_if_needed()
-
-        h, s = kwargs.get(ATTR_HS_COLOR, self._hs_color)
-        v = kwargs.get(ATTR_BRIGHTNESS, self._brightness) * 100 // 255
-
-        await self._device.send_hsv(h, s, v)
-        self._hs_color = (h, s)
-        self._brightness = kwargs.get(ATTR_BRIGHTNESS, self._brightness)
+        await self._device.send_power(True)
         self._is_on = True
 
+        # Aplicar efecto si se especifica
         if ATTR_EFFECT in kwargs:
             effect = kwargs[ATTR_EFFECT]
             if effect in SUPPORTED_EFFECTS:
                 preset_id = SUPPORTED_EFFECTS.index(effect)
                 await self._device.send_preset(preset_id)
                 self._effect = effect
+                return  # ← evitamos enviar color si hay efecto
+
+        # Aplicar color si se especifica
+        if ATTR_HS_COLOR in kwargs or ATTR_BRIGHTNESS in kwargs:
+            h, s = kwargs.get(ATTR_HS_COLOR, self._hs_color)
+            v = kwargs.get(ATTR_BRIGHTNESS, self._brightness) * 100 // 255
+            await self._device.send_hsv(h, s, v)
+            self._hs_color = (h, s)
+            self._brightness = kwargs.get(ATTR_BRIGHTNESS, self._brightness)
+            self._effect = None  # ← limpiamos efecto si se aplica color
+
 
     async def async_turn_off(self, **kwargs):
         await self._device.reconnect_if_needed()
-        await self._device.send_hsv(0, 0, 0)
+        await self._device.send_power(False)  # ← nuevo comando directo
         self._is_on = False
+
 
     async def async_update(self):
         await self._device.reconnect_if_needed()

@@ -179,3 +179,17 @@ class HelloFairyBLE:
         except Exception as e:
             _LOGGER.error(f"BLE scan failed: {e}")
             return []
+        
+    async def send_power(self, state: bool):
+        """Enciende o apaga la luz con comando directo."""
+        if not await self.safe_is_connected():
+            _LOGGER.warning("No conectado. Comando de encendido/apagado no enviado.")
+            return
+
+        payload = bytearray([0xaa, 0x02, 0x01, 0x01 if state else 0x00, 0xae if state else 0xad])
+        char_uuid = await self.resolve_characteristic()
+        if char_uuid:
+            await self.client.write_gatt_char(char_uuid, payload, response=False)
+            _LOGGER.debug(f"Comando {'encendido' if state else 'apagado'} enviado → {payload.hex()}")
+        else:
+            _LOGGER.error("No se pudo resolver UUID para comando de encendido/apagado")

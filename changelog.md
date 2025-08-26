@@ -22,3 +22,10 @@
 - Problema con entidad light que no carga (continuacion)
 - Problema con serivicios que no encuentra
 - Soluciona problemas de compatibilidad
+
+## [0.1.6] - 2025-08-25
+- Problema con entidad light que no carga (continuacion)
+- Problema con serivicios que no encuentra (continuacion)
+- Solucion a problema que no levanta la integracion.
+- Cambia default time out a 30
+- agrega clase de testing

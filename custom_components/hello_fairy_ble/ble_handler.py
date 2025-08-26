@@ -27,7 +27,10 @@ class HelloFairyBLE:
             _LOGGER.info(f"Conectado a Hello Fairy: {self.mac} → {self.connected}")
 
             if self.connected:
-                await self.client.get_services()
+                                
+                # ✅ Acceso directo a servicios sin await
+                services = self.client.services
+
                 for service in self.client.services:
                     _LOGGER.debug(f"Servicio: {service.uuid}")
                     for char in service.characteristics:
@@ -70,8 +73,11 @@ class HelloFairyBLE:
             await self.connect()
 
     async def resolve_characteristic(self):
+        if not self.client.services:
+            _LOGGER.warning(f"No hay servicios disponibles para {self.mac}")
+           return None
+
         try:
-            await self.client.get_services()
             for service in self.client.services:
                 for char in service.characteristics:
                     if "write" in char.properties:

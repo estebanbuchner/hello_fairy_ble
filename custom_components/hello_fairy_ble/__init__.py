@@ -23,7 +23,7 @@ async def async_setup(hass: HomeAssistant, config: dict):
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
     hass.async_create_task(
-        await hass.config_entries.async_forward_entry_setups(entry, ["light"])
+        hass.config_entries.async_forward_entry_setups(entry, ["light"])
     )
 
     return True

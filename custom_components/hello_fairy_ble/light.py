@@ -8,6 +8,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .ble_handler import HelloFairyBLE
+from .ble_handler import get_ble_instance
+
 from .const import SUPPORTED_EFFECTS, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -21,8 +23,8 @@ class HelloFairyLight(LightEntity):
         self._hs_color = (0, 0)
         self._effect = None
         self._available = False
-        self._device = HelloFairyBLE(mac)
-
+        #self._device = HelloFairyBLE(mac)
+        self.device = get_ble_instance(mac)
         self._attr_name = name
         self._attr_supported_color_modes = {ColorMode.HS}
         self._attr_color_mode = ColorMode.HS

@@ -54,3 +54,10 @@
 
 ## [0.2.2] - 2025-08-29
 - Cambia implementacion de lectura de notificaciones
+
+## [0.2.3] - 2025-08-29
+- Elimina duplicados en notificaciones
+
+
+## [0.2.4] - 2025-08-29
+- Soluciona instancias duplicadas de HelloFairBLE

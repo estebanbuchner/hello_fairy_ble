@@ -9,7 +9,9 @@ from homeassistant.helpers import config_entry_flow
 
 
 from .light import HelloFairyLight
-from .ble_handler import HelloFairyBLE  
+from .ble_handler import HelloFairyBLE
+from .ble_handler import get_ble_instance
+
 from .sensor import HelloFairyRemoteSensor
 from .const import DOMAIN
 
@@ -22,10 +24,13 @@ async def async_setup(hass: HomeAssistant, config: dict):
     return True
 
 
+
+
 # ⬇️ Función de servicio definida fuera
 async def async_test_light_service(call):
     mac = call.data.get("mac", "11:11:00:30:4E:14")
-    device = HelloFairyBLE(mac)
+    #device = HelloFairyBLE(mac)
+    device = get_ble_instance(mac)
 
     if await device.connect():
 

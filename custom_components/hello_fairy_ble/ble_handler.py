@@ -2,12 +2,21 @@ import asyncio
 import logging
 from bleak import BleakClient, BleakScanner
 from bleak.exc import BleakCharacteristicNotFoundError
-from .const import CHARACTERISTIC_UUID, CHARACTERISTIC_UUID_COMMAND, DEVICE_NAME_PREFIX, DEFAULT_TIMEOUT, CHARACTERISTIC_UUID_WRITE, CHARACTERISTIC_UUID_NOTIFY
+from .const import CHARACTERISTIC_UUID, DEVICE_NAME_PREFIX, DEFAULT_TIMEOUT, CHARACTERISTIC_UUID_WRITE, CHARACTERISTIC_UUID_NOTIFY
 from typing import Optional, Union, List, Dict, Any
 
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+_ble_instances = {}
+
+def get_ble_instance(mac):
+    if mac not in _ble_instances:
+        _ble_instances[mac] = HelloFairyBLE(mac)
+    return _ble_instances[mac]
+
 
 class HelloFairyBLE:
     def __init__(self, mac, timeout=DEFAULT_TIMEOUT):
@@ -41,10 +50,10 @@ class HelloFairyBLE:
     def _on_connect(self):
         self.connected = True
 
-    def _on_disconnect(self):
+    def _on_disconnect(self, client):
         self.connected = False
         self.notifications_active = False
-
+        _LOGGER.warning(f"Desconectado de {self.mac}")
 
     async def connect(self):
         try:
@@ -170,13 +179,19 @@ class HelloFairyBLE:
         if not self.notifications_active:
             await self.client.start_notify(CHARACTERISTIC_UUID_NOTIFY, self._notification_handler)
             self.notifications_active = True
+            _LOGGER.info("Agrego suscripcion a notificaciones")
+        else:
+            _LOGGER.warning("Ignoro suscripcion a notificaciones")
+
 
 
     def _notification_handler(self, sender, data):
         hex_data = data.hex()
-        _LOGGER.debug(f"[notify] Recibido: {hex_data}")
+        if hex_data != self.last_command:
+            _LOGGER.debug(f"[notify] Comando nuevo recibido: {hex_data}")
+        else:
+            _LOGGER.debug(f"[notify] Comando duplicado ignorado: {hex_data}")
         self.last_command = hex_data
-        # Podés decodificar HSV, presets, ACKs como en ESPHome
 
 
     async def read_remote_command(self):

@@ -4,6 +4,8 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from .const import DOMAIN, DEVICE_NAME_PREFIX
 from .ble_handler import HelloFairyBLE
+from .ble_handler import get_ble_instance
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,7 +20,8 @@ class HelloFairyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             mac = user_input["mac"]
             name = user_input["name"]
 
-            device = HelloFairyBLE(mac)
+            #device = HelloFairyBLE(mac)
+            device = get_ble_instance(mac)
             await device.connect()
             if not device.connected:
                 errors["base"] = "cannot_connect"

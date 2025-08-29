@@ -46,3 +46,8 @@
 ## [0.2.0] - 2025-08-29
 - Soluciona problema de presets y colores (en proceso)
 
+## [0.2.1] - 2025-08-29
+- Se solucina el envio del preset y de brillo
+- Implementa lectura de notificaciones
+- Implementa sensor de estado de conexion
+

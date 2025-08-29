@@ -10,7 +10,7 @@ from homeassistant.helpers import config_entry_flow
 
 from .light import HelloFairyLight
 from .ble_handler import HelloFairyBLE  
-
+from .sensor import HelloFairyRemoteSensor
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,9 +51,14 @@ async def async_test_light_service(call):
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
 
-    await hass.config_entries.async_forward_entry_setups(entry, ["light"])
+
+    await hass.config_entries.async_forward_entry_setups(entry, ["light", "sensor"])
 
     hass.services.async_register(DOMAIN, "test_light", async_test_light_service)
+
+   
+
+
 
     return True
 

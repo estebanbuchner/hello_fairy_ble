@@ -49,11 +49,11 @@ Una vez configurado, se crea una entidad `light.hello_fairy_<nombre>`. Desde la 
 ## Light Entity
 ### Funcionando
 * Encendido/apagado
+* Control de brillo 
 ### Pendiente
-* Control de brillo )
 * Control de color (HSV → RGB)
 * Selección de presets (efectos)
-
+* Armar nombre de los presents
 
 
 ## Sensor de Conectividad

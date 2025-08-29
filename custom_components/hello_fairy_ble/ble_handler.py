@@ -3,6 +3,9 @@ import logging
 from bleak import BleakClient, BleakScanner
 from bleak.exc import BleakCharacteristicNotFoundError
 from .const import CHARACTERISTIC_UUID, DEVICE_NAME_PREFIX, DEFAULT_TIMEOUT
+from typing import Optional, Union, List, Dict, Any
+
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -139,14 +142,17 @@ class HelloFairyBLE:
     async def read_remote_command(self):
         if not await self.safe_is_connected():
             _LOGGER.warning("No conectado. Lectura remota no disponible.")
-            return
+            return None
 
         try:
-            data = await self.client.read_gatt_char(CHARACTERISTIC_UUID)
+            data = await self.client.read_gatt_char(CHARACTERISTIC_UUID_COMMAND)
             self.last_command = data.hex()
-            _LOGGER.info(f"Remote command received: {self.last_command}")
+            _LOGGER.info(f"Comando remoto recibido: {self.last_command}")
+            return self.last_command
         except Exception as e:
-            _LOGGER.warning(f"Failed to read remote command: {e}")
+            _LOGGER.warning(f"Error al leer comando remoto: {e}")
+            return None
+
 
     def hsv_to_rgb(self, h, s, v):
         h = float(h)

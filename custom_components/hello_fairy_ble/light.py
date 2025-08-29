@@ -83,6 +83,12 @@ class HelloFairyLight(LightEntity):
                 self._effect = effect
                 return
 
+        if ATTR_BRIGHTNESS in kwargs and self._effect:
+            preset_id = SUPPORTED_EFFECTS.index(self._effect) + 1
+            brightness = kwargs[ATTR_BRIGHTNESS] * 100 // 255
+            await self._device.send_preset(preset_id, brightness)
+            self._brightness = kwargs[ATTR_BRIGHTNESS]
+            return
 
         # Aplicar color si se especifica
         if ATTR_HS_COLOR in kwargs or ATTR_BRIGHTNESS in kwargs:

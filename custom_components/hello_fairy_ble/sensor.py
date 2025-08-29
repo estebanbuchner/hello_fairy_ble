@@ -1,5 +1,6 @@
 from homeassistant.components.sensor import SensorEntity
-from .hello_fairy_ble import HelloFairyBLE
+from .ble_handler import HelloFairyBLE
+from .const import DOMAIN
 
 import logging
 
@@ -24,6 +25,16 @@ class HelloFairyRemoteSensor(SensorEntity):
         command = await self._device.read_remote_command()
         if command:
             self._state = command
+            
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._mac)},
+            "name": self._name,
+            "manufacturer": "Hello Fairy",
+            "connections": {("bluetooth", self._mac)},
+        }
+
 
 class HelloFairyConnectionSensor(SensorEntity):
     def __init__(self, mac, name):
@@ -47,15 +58,26 @@ class HelloFairyConnectionSensor(SensorEntity):
             _LOGGER.warning(f"Error al verificar conexión BLE: {e}")
             self._state = "error"
 
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._mac)},
+            "name": self._name,
+            "manufacturer": "Hello Fairy",
+            "connections": {("bluetooth", self._mac)},
+        }
+
+
 
 async def async_setup_entry(hass, entry, async_add_entities):
     mac = entry.data["mac"]
     name = entry.data.get("name", "Hello Fairy")
 
-    entities = [
-        HelloFairyRemoteSensor(mac, name),
-        HelloFairyConnectionSensor(mac, name),
-    ]
+    remote_sensor = HelloFairyRemoteSensor(mac, name)
+    connection_sensor = HelloFairyConnectionSensor(mac, name)
 
-    async_add_entities(entities)
+    # ⬇️ Suscribirse a notificaciones BLE
+    await remote_sensor._device.subscribe_to_notifications()
+
+    async_add_entities([remote_sensor, connection_sensor])
 

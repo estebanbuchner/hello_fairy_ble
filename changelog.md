@@ -51,3 +51,6 @@
 - Implementa lectura de notificaciones
 - Implementa sensor de estado de conexion
 
+
+## [0.2.2] - 2025-08-29
+- Cambia implementacion de lectura de notificaciones

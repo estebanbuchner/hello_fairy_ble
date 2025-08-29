@@ -2,7 +2,7 @@ import asyncio
 import logging
 from bleak import BleakClient, BleakScanner
 from bleak.exc import BleakCharacteristicNotFoundError
-from .const import CHARACTERISTIC_UUID, DEVICE_NAME_PREFIX, DEFAULT_TIMEOUT
+from .const import CHARACTERISTIC_UUID, CHARACTERISTIC_UUID_COMMAND, DEVICE_NAME_PREFIX, DEFAULT_TIMEOUT, CHARACTERISTIC_UUID_WRITE, CHARACTERISTIC_UUID_NOTIFY
 from typing import Optional, Union, List, Dict, Any
 
 
@@ -16,10 +16,35 @@ class HelloFairyBLE:
         self.client = BleakClient(mac)
         self.connected = False
         self.last_command = None
+        self.notifications_active = False
+
+        # Callback para desconexión
+        self.client.set_disconnected_callback(self._on_disconnect)
 
     async def safe_is_connected(self):
-        estado = self.client.is_connected
-        return await estado() if callable(estado) else estado
+        try:
+            estado = self.client.is_connected
+            conectado = await estado() if callable(estado) else estado
+
+            if conectado:
+                return True
+
+            # Intentar reconexión si no está conectado
+            await self.reconnect_if_needed()
+            estado = self.client.is_connected
+            return await estado() if callable(estado) else estado
+
+        except Exception as e:
+            _LOGGER.warning(f"[safe_is_connected] Error al verificar conexión: {e}")
+            return False
+
+    def _on_connect(self):
+        self.connected = True
+
+    def _on_disconnect(self):
+        self.connected = False
+        self.notifications_active = False
+
 
     async def connect(self):
         try:
@@ -30,6 +55,10 @@ class HelloFairyBLE:
             _LOGGER.info(f"Conectado a Hello Fairy: {self.mac} → {self.connected}")
 
             if self.connected:
+                 
+                self._on_connect() 
+
+                await self.subscribe_to_notifications()
                                 
                 # ✅ Acceso directo a servicios sin await
                 services = self.client.services
@@ -137,6 +166,17 @@ class HelloFairyBLE:
         else:
             _LOGGER.error("No se pudo resolver UUID para preset")
 
+    async def subscribe_to_notifications(self):
+        if not self.notifications_active:
+            await self.client.start_notify(CHARACTERISTIC_UUID_NOTIFY, self._notification_handler)
+            self.notifications_active = True
+
+
+    def _notification_handler(self, sender, data):
+        hex_data = data.hex()
+        _LOGGER.debug(f"[notify] Recibido: {hex_data}")
+        self.last_command = hex_data
+        # Podés decodificar HSV, presets, ACKs como en ESPHome
 
 
     async def read_remote_command(self):
@@ -144,14 +184,9 @@ class HelloFairyBLE:
             _LOGGER.warning("No conectado. Lectura remota no disponible.")
             return None
 
-        try:
-            data = await self.client.read_gatt_char(CHARACTERISTIC_UUID_COMMAND)
-            self.last_command = data.hex()
-            _LOGGER.info(f"Comando remoto recibido: {self.last_command}")
-            return self.last_command
-        except Exception as e:
-            _LOGGER.warning(f"Error al leer comando remoto: {e}")
-            return None
+        # Ya no intentamos leer directamente
+        return getattr(self, "last_command", None)
+
 
 
     def hsv_to_rgb(self, h, s, v):
@@ -207,3 +242,5 @@ class HelloFairyBLE:
             _LOGGER.debug(f"Comando {'encendido' if state else 'apagado'} enviado → {payload.hex()}")
         else:
             _LOGGER.error("No se pudo resolver UUID para comando de encendido/apagado")
+
+

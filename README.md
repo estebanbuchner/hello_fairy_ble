@@ -50,11 +50,11 @@ Una vez configurado, se crea una entidad `light.hello_fairy_<nombre>`. Desde la 
 ### Funcionando
 * Encendido/apagado
 * Control de brillo 
+* Selección de presets (efectos)
 ### Pendiente
 * Control de color (HSV → RGB)
-* Selección de presets (efectos)
 * Armar nombre de los presents
-
+* Al iniciar ver si la luz esta encendida o apagada
 
 ## Sensor de Conectividad
 ### Funcionando

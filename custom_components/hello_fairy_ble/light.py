@@ -24,7 +24,7 @@ class HelloFairyLight(LightEntity):
         self._effect = None
         self._available = False
         #self._device = HelloFairyBLE(mac)
-        self.device = get_ble_instance(mac)
+        self._device = get_ble_instance(mac)
         self._attr_name = name
         self._attr_supported_color_modes = {ColorMode.HS}
         self._attr_color_mode = ColorMode.HS
@@ -111,6 +111,10 @@ class HelloFairyLight(LightEntity):
     async def async_update(self):
         await self._device.reconnect_if_needed()
         self._available = self._device.connected
+        self._is_on = getattr(self._device, "power_state", False)
+
+
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback):
     """Set up Hello Fairy light from a config entry."""
@@ -123,4 +127,5 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         return
 
     entity = HelloFairyLight(mac, name)
+    await entity.async_update()
     async_add_entities([entity], update_before_add=True)

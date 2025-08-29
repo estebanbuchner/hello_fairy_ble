@@ -193,6 +193,14 @@ class HelloFairyBLE:
             _LOGGER.debug(f"[notify] Comando duplicado ignorado: {hex_data}")
         self.last_command = hex_data
 
+        # Ejemplo: si el paquete indica encendido
+        if hex_data.startswith("aa02") and hex_data[6:8] == "01":
+            self.power_state = True
+        elif hex_data.startswith("aa02") and hex_data[6:8] == "00":
+            self.power_state = False
+
+        _LOGGER.debug(f"[notify] Estado inferido: {'encendido' if self.power_state else 'apagado'}")
+        🔧 Ajustá el parsing según el formato real del paquete que recibís.
 
     async def read_remote_command(self):
         if not await self.safe_is_connected():

@@ -61,3 +61,6 @@
 
 ## [0.2.4] - 2025-08-29
 - Soluciona instancias duplicadas de HelloFairBLE
+
+## [0.2.5] - 2025-08-29
+- Recupera el estado de la luz al iniciar home assistant

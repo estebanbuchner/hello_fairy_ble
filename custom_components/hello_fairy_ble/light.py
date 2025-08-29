@@ -75,14 +75,14 @@ class HelloFairyLight(LightEntity):
         await self._device.send_power(True)
         self._is_on = True
 
-        # Aplicar efecto si se especifica
         if ATTR_EFFECT in kwargs:
             effect = kwargs[ATTR_EFFECT]
             if effect in SUPPORTED_EFFECTS:
-                preset_id = SUPPORTED_EFFECTS.index(effect)
-                await self._device.send_preset(preset_id)
+                preset_id = SUPPORTED_EFFECTS.index(effect) + 1  # ← los presets empiezan en 1
+                await self._device.send_preset(preset_id, self._brightness * 100 // 255)
                 self._effect = effect
-                return  # ← evitamos enviar color si hay efecto
+                return
+
 
         # Aplicar color si se especifica
         if ATTR_HS_COLOR in kwargs or ATTR_BRIGHTNESS in kwargs:

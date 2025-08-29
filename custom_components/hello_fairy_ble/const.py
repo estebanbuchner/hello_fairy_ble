@@ -6,5 +6,5 @@ CHARACTERISTIC_UUID = "0000fff3-0000-1000-8000-00805f9b34fb"  # UUID BLE para es
 DEVICE_NAME_PREFIX = "Hello Fairy"
 
 SUPPORTED_EFFECTS = [
-    "Rainbow", "Pulse", "Strobe", "Fade", "Fire", "Ocean"
+    "Rainbow", "Twinkle", "Fireworks", "Ocean", "Blue & White", "Orange Fireworks"
 ]

@@ -28,15 +28,22 @@ async def async_test_light_service(call):
     device = HelloFairyBLE(mac)
 
     if await device.connect():
-        await device.send_power(True)
-        await device.send_hsv(0, 100, 100)
+
+     
+        await device.connect()
+        await device.turn_on()
         await asyncio.sleep(2)
-        await device.send_hsv(120, 100, 100)
-        await asyncio.sleep(2)
-        await device.send_hsv(240, 100, 100)
-        await asyncio.sleep(2)
-        await device.send_power(False)
+
+        await device.send_preset(41, brightness=80)  # Blue & White
+        await asyncio.sleep(10)
+        
+        await device.send_preset(58, brightness=100) # Orange Fireworks
+        await asyncio.sleep(10)
+
+        await device.turn_off()
         await device.disconnect()
+
+
     else:
         _LOGGER.warning(f"No se pudo conectar con {mac}")
 

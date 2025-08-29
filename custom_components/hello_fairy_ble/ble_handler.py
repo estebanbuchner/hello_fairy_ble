@@ -108,25 +108,33 @@ class HelloFairyBLE:
         else:
             _LOGGER.debug(f"Sent HSV: {h},{s},{v} → RGB {rgb}")
 
-    async def send_preset(self, preset_id):
+    async def send_preset(self, preset_id: int, brightness: Optional[int] = None):
         if not await self.safe_is_connected():
             _LOGGER.warning("No conectado. Comando preset no enviado.")
             return
 
-        payload = bytearray([0x7e, 0x00, 0x05, 0x04, preset_id, 0x00, 0xef])
+        # Si no se especifica brillo, usar el último conocido
+        brightness = brightness or self._brightness * 100 // 255
+        brightness = max(1, min(brightness, 100))  # Clamp
+        b_scaled = brightness * 10  # Escalado a 0–1000
 
-        try:
-            await self.client.write_gatt_char(CHARACTERISTIC_UUID, payload)
-        except BleakCharacteristicNotFoundError:
-            _LOGGER.warning(f"UUID fijo falló: {CHARACTERISTIC_UUID}")
-            dynamic_uuid = await self.resolve_characteristic()
-            if dynamic_uuid:
-                _LOGGER.warning(f"Usando UUID dinámico: {dynamic_uuid}")
-                await self.client.write_gatt_char(dynamic_uuid, payload)
-            else:
-                _LOGGER.error("No se pudo resolver UUID dinámico para preset")
+        payload = bytearray([
+            0xaa, 0x03, 0x04, 0x02,
+            preset_id & 0xFF,
+            (b_scaled >> 8) & 0xFF,
+            b_scaled & 0xFF,
+            0x00  # checksum placeholder
+        ])
+        payload[-1] = sum(payload[:-1]) % 256  # checksum
+
+        char_uuid = await self.resolve_characteristic()
+        if char_uuid:
+            await self.client.write_gatt_char(char_uuid, payload, response=False)
+            _LOGGER.debug(f"Comando preset enviado → {payload.hex()}")
         else:
-            _LOGGER.debug(f"Sent preset ID: {preset_id}")
+            _LOGGER.error("No se pudo resolver UUID para preset")
+
+
 
     async def read_remote_command(self):
         if not await self.safe_is_connected():

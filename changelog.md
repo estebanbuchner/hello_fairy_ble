@@ -72,3 +72,6 @@
 ## [0.2.7] - 2025-09-01
 - Agrega controles antes de conectarse para ver que este disponible y ademas si no esta disponible espera un cierto periodo de tiempo par no reintentar inmediatamente y no saturar bt.
 - Cambia la dependencia con Bleak
+
+## [0.2.8] - 2025-09-01
+- Bug en connect

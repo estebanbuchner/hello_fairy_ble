@@ -41,6 +41,12 @@ class HelloFairyRemoteSensor(SensorEntity):
             "connections": {("bluetooth", self._mac)},
         }
 
+    @property
+    def extra_state_attributes(self):
+        return {
+            "last_seen": self._device.last_seen.isoformat() if self._device.last_seen else None,
+        }
+
 
 class HelloFairyConnectionSensor(SensorEntity):
     def __init__(self, mac, name):
@@ -72,6 +78,12 @@ class HelloFairyConnectionSensor(SensorEntity):
             "name": self._name,
             "manufacturer": "Hello Fairy",
             "connections": {("bluetooth", self._mac)},
+        }
+    @property
+    def extra_state_attributes(self):
+        return {
+            "reconnect_attempts": self._device.reconnect_attempts,
+            "last_reconnect_at": self._device.last_reconnect_at.isoformat() if self._device.last_reconnect_at else None,
         }
 
 

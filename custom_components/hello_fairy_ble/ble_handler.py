@@ -4,8 +4,7 @@ from bleak import BleakClient, BleakScanner
 from bleak.exc import BleakCharacteristicNotFoundError
 from .const import CHARACTERISTIC_UUID, DEVICE_NAME_PREFIX, DEFAULT_TIMEOUT, CHARACTERISTIC_UUID_WRITE, CHARACTERISTIC_UUID_NOTIFY
 from typing import Optional, Union, List, Dict, Any
-
-
+from datetime import datetime
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,6 +25,10 @@ class HelloFairyBLE:
         self.connected = False
         self.last_command = None
         self.notifications_active = False
+        self.reconnect_attempts = 0
+
+        self.power_state = None
+
 
         # Callback para desconexión
         self.client.set_disconnected_callback(self._on_disconnect)
@@ -33,19 +36,11 @@ class HelloFairyBLE:
     async def safe_is_connected(self):
         try:
             estado = self.client.is_connected
-            conectado = await estado() if callable(estado) else estado
-
-            if conectado:
-                return True
-
-            # Intentar reconexión si no está conectado
-            await self.reconnect_if_needed()
-            estado = self.client.is_connected
             return await estado() if callable(estado) else estado
-
         except Exception as e:
             _LOGGER.warning(f"[safe_is_connected] Error al verificar conexión: {e}")
             return False
+
 
     def _on_connect(self):
         self.connected = True
@@ -122,6 +117,9 @@ class HelloFairyBLE:
             self.connected = False
 
     async def reconnect_if_needed(self):
+        self.reconnect_attempts += 1
+        self.last_reconnect_at = datetime.now()
+
         for intento in range(3):
             if await self.safe_is_connected():
                 return True
@@ -132,6 +130,7 @@ class HelloFairyBLE:
             except Exception as e:
                 _LOGGER.warning(f"Falló reconexión #{intento+1}: {e}")
         return False
+
 
 
     async def resolve_characteristic(self):
@@ -213,6 +212,9 @@ class HelloFairyBLE:
         else:
             _LOGGER.debug(f"[notify] Comando duplicado ignorado: {hex_data}")
         self.last_command = hex_data
+    
+        self.last_seen = datetime.now()
+
 
         if hex_data.startswith("aa01") and hex_data[12:14] == "01":
             self.power_state = True

@@ -67,3 +67,8 @@
 
 ## [0.2.6] - 2025-08-29
 - Agrega comando para mandar RAW Data a la luz
+
+
+## [0.2.7] - 2025-09-01
+- Agrega controles antes de conectarse para ver que este disponible y ademas si no esta disponible espera un cierto periodo de tiempo par no reintentar inmediatamente y no saturar bt.
+- Cambia la dependencia con Bleak

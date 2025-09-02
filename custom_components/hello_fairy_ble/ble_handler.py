@@ -55,9 +55,22 @@ class HelloFairyBLE:
         self.notifications_active = False
         _LOGGER.warning(f"Desconectado de {self.mac}")
 
+    @staticmethod
+    async def is_device_visible(mac):
+        devices = await BleakScanner.discover()
+        return any(d.address.lower() == mac.lower() for d in devices)
+
+
     async def connect(self):
         try:
             _LOGGER.debug(f"Intentando conectar con {self.mac}")
+
+             # 🔍 Verificar visibilidad BLE antes de conectar
+            if not await self.is_device_visible(self.mac):
+                _LOGGER.warning(f"{self.mac} no visible en escaneo BLE. Se omite conexión.")
+                self.connected = False
+                return False
+
             await asyncio.wait_for(self.client.connect(timeout=self.timeout), timeout=self.timeout)
 
             self.connected = await self.safe_is_connected()
@@ -109,9 +122,17 @@ class HelloFairyBLE:
             self.connected = False
 
     async def reconnect_if_needed(self):
-        if not await self.safe_is_connected():
-            _LOGGER.warning("Desconectado. Intentando reconexión...")
-            await self.connect()
+        for intento in range(3):
+            if await self.safe_is_connected():
+                return True
+            _LOGGER.warning(f"Intento de reconexión #{intento+1} para {self.mac}")
+            await asyncio.sleep(2 ** intento)  # 1s, 2s, 4s
+            try:
+                await self.connect()
+            except Exception as e:
+                _LOGGER.warning(f"Falló reconexión #{intento+1}: {e}")
+        return False
+
 
     async def resolve_characteristic(self):
         if not self.client.services:

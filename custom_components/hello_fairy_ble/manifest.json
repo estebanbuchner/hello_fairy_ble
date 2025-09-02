@@ -4,8 +4,8 @@
     "documentation": "https://github.com/estebanbuchner/hello_fairy_ble",
     "dependencies": [],
     "codeowners": ["@estebanbuchner"],
-    "requirements": ["bleak>=0.21.1"],
-    "version": "0.2.6",
+    "requirements": ["bleak>=0.20.2"],
+    "version": "0.2.7",
     "iot_class": "local_polling",
     "config_flow": true
   }

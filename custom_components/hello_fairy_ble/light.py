@@ -111,8 +111,8 @@ class HelloFairyLight(LightEntity):
     async def async_update(self):
         await self._device.reconnect_if_needed()
         self._available = self._device.connected
-        self._is_on = getattr(self._device, "power_state", False)
-
+        #self._is_on = getattr(self._device, "power_state", False)
+        self._is_on = self._device.power_state
 
 
 

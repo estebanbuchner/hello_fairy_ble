@@ -64,3 +64,6 @@
 
 ## [0.2.5] - 2025-08-29
 - Recupera el estado de la luz al iniciar home assistant
+
+## [0.2.6] - 2025-08-29
+- Agrega comando para mandar RAW Data a la luz

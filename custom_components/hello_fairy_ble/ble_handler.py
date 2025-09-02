@@ -193,14 +193,16 @@ class HelloFairyBLE:
             _LOGGER.debug(f"[notify] Comando duplicado ignorado: {hex_data}")
         self.last_command = hex_data
 
-        # Ejemplo: si el paquete indica encendido
-        if hex_data.startswith("aa02") and hex_data[6:8] == "01":
+        if hex_data.startswith("aa01") and hex_data[12:14] == "01":
             self.power_state = True
-        elif hex_data.startswith("aa02") and hex_data[6:8] == "00":
+            _LOGGER.debug(f"[notify] Estado inferido: 'encendido' ")
+        elif hex_data.startswith("aa01") and hex_data[12:14] == "00":
             self.power_state = False
+            _LOGGER.debug(f"[notify] Estado inferido: 'apagado' ")
+        elif hex_data.startswith("aa01"):
+            _LOGGER.debug(f"[notify] {hex_data[11:14]} - {hex_data[0:16]} ")
 
-        _LOGGER.debug(f"[notify] Estado inferido: {'encendido' if self.power_state else 'apagado'}")
-        🔧 Ajustá el parsing según el formato real del paquete que recibís.
+    
 
     async def read_remote_command(self):
         if not await self.safe_is_connected():
@@ -257,6 +259,8 @@ class HelloFairyBLE:
         if not await self.safe_is_connected():
             _LOGGER.warning("No conectado. Comando de encendido/apagado no enviado.")
             return
+
+        self.power_state = state
 
         payload = bytearray([0xaa, 0x02, 0x01, 0x01 if state else 0x00, 0xae if state else 0xad])
         char_uuid = await self.resolve_characteristic()

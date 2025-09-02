@@ -53,6 +53,29 @@ async def async_test_light_service(call):
         _LOGGER.warning(f"No se pudo conectar con {mac}")
 
 
+async def handle_send_raw_command(call):
+    mac = call.data["mac"]
+    raw = call.data["raw"]
+
+    try:
+        # Convertir string a bytearray
+        parts = [int(x.strip(), 16) for x in raw.split(",")]
+        payload = bytearray(parts)
+
+        device = get_ble_instance(mac)
+        await device.reconnect_if_needed()
+
+        char_uuid = await device.resolve_characteristic()
+        if char_uuid:
+            await device.client.write_gatt_char(char_uuid, payload, response=False)
+            _LOGGER.info(f"Comando raw enviado → {payload.hex()}")
+        else:
+            _LOGGER.error("No se pudo resolver UUID para comando raw")
+
+    except Exception as e:
+        _LOGGER.exception(f"Error al enviar comando raw: {e}")
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
 
@@ -60,6 +83,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     await hass.config_entries.async_forward_entry_setups(entry, ["light", "sensor"])
 
     hass.services.async_register(DOMAIN, "test_light", async_test_light_service)
+    hass.services.async_register(DOMAIN, "send_raw_command", handle_send_raw_command)
+
 
    
 

@@ -51,39 +51,39 @@ async def handle_send_raw_command(call):
 
 
 
-    async def handle_send_preset_command(call):
-        mac = call.data["mac"]
-        preset_id = int(call.data["preset_id"])
-        brightness = int(call.data.get("brightness", 100))  # default: 100%
+async def handle_send_preset_command(call):
+    mac = call.data["mac"]
+    preset_id = int(call.data["preset_id"])
+    brightness = int(call.data.get("brightness", 100))  # default: 100%
 
-        try:
-            # Escalar brillo a rango 0–1000
-            b_scaled = max(1, min(brightness, 100)) * 10
-            hi = (b_scaled >> 8) & 0xFF
-            lo = b_scaled & 0xFF
+    try:
+        # Escalar brillo a rango 0–1000
+        b_scaled = max(1, min(brightness, 100)) * 10
+        hi = (b_scaled >> 8) & 0xFF
+        lo = b_scaled & 0xFF
 
-            # Construir payload
-            payload = bytearray([
-                0xaa, 0x03, 0x04, 0x02,
-                preset_id & 0xFF,
-                hi,
-                lo,
-                0x00  # checksum placeholder
-            ])
-            payload[-1] = sum(payload[:-1]) % 256  # checksum
+        # Construir payload
+        payload = bytearray([
+            0xaa, 0x03, 0x04, 0x02,
+            preset_id & 0xFF,
+            hi,
+            lo,
+            0x00  # checksum placeholder
+        ])
+        payload[-1] = sum(payload[:-1]) % 256  # checksum
 
-            device = get_ble_instance(mac)
-            await device.reconnect_if_needed()
+        device = get_ble_instance(mac)
+        await device.reconnect_if_needed()
 
-            char_uuid = await device.resolve_characteristic()
-            if char_uuid:
-                await device.client.write_gatt_char(char_uuid, payload, response=False)
-                _LOGGER.info(f"Comando preset enviado → {payload.hex()}")
-            else:
-                _LOGGER.error("No se pudo resolver UUID para comando preset")
+        char_uuid = await device.resolve_characteristic()
+        if char_uuid:
+            await device.client.write_gatt_char(char_uuid, payload, response=False)
+            _LOGGER.info(f"Comando preset enviado → {payload.hex()}")
+        else:
+            _LOGGER.error("No se pudo resolver UUID para comando preset")
 
-        except Exception as e:
-            _LOGGER.exception(f"Error al enviar comando preset: {e}")
+    except Exception as e:
+        _LOGGER.exception(f"Error al enviar comando preset: {e}")
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):

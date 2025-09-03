@@ -6,7 +6,8 @@ from homeassistant.components.light import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
+from homeassistant.helpers.event import async_track_time_interval
+from datetime import timedelta
 from .ble_handler import HelloFairyBLE
 from .ble_handler import get_ble_instance
 
@@ -31,7 +32,7 @@ class HelloFairyLight(LightEntity):
         self._attr_supported_features = LightEntityFeature.EFFECT
         self._attr_effect_list = SUPPORTED_EFFECTS
         self._attr_unique_id = f"hello_fairy_{mac.replace(':', '')}"
-
+        self._device.light_ref = self       
 
     @property
     def device_info(self):
@@ -129,3 +130,4 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     entity = HelloFairyLight(mac, name)
     await entity.async_update()
     async_add_entities([entity], update_before_add=True)
+

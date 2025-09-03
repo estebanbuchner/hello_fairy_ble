@@ -26,10 +26,10 @@ class HelloFairyBLE:
         self.last_command = None
         self.notifications_active = False
         self.reconnect_attempts = 0
-
         self.power_state = None
-
-
+        self.last_seen = None
+        self.light_ref = None
+        self.sensor_ref = None
         # Callback para desconexión
         self.client.set_disconnected_callback(self._on_disconnect)
 
@@ -38,7 +38,7 @@ class HelloFairyBLE:
             estado = self.client.is_connected
             return await estado() if callable(estado) else estado
         except Exception as e:
-            _LOGGER.warning(f"[safe_is_connected] Error al verificar conexión: {e}")
+            _LOGGER.error(f"[safe_is_connected] Error al verificar conexión: {e}")
             return False
 
 
@@ -48,7 +48,7 @@ class HelloFairyBLE:
     def _on_disconnect(self, client):
         self.connected = False
         self.notifications_active = False
-        _LOGGER.warning(f"Desconectado de {self.mac}")
+        _LOGGER.debug(f"Desconectado de {self.mac}")
 
     @staticmethod
     async def is_device_visible(mac):
@@ -62,7 +62,7 @@ class HelloFairyBLE:
 
              # 🔍 Verificar visibilidad BLE antes de conectar
             if not await self.is_device_visible(self.mac):
-                _LOGGER.warning(f"{self.mac} no visible en escaneo BLE. Se omite conexión.")
+                _LOGGER.debug(f"{self.mac} no visible en escaneo BLE. Se omite conexión.")
                 self.connected = False
                 return False
 
@@ -76,6 +76,7 @@ class HelloFairyBLE:
                 self._on_connect() 
 
                 await self.subscribe_to_notifications()
+                await self.send_sync_command()  
                                 
                 # ✅ Acceso directo a servicios sin await
                 services = self.client.services
@@ -97,7 +98,7 @@ class HelloFairyBLE:
             return self.connected
 
         except asyncio.TimeoutError:
-            _LOGGER.warning(f"Timeout al conectar con {self.mac}")
+            _LOGGER.error(f"Timeout al conectar con {self.mac}")
             self.connected = False
             return False
 
@@ -123,7 +124,7 @@ class HelloFairyBLE:
         for intento in range(3):
             if await self.safe_is_connected():
                 return True
-            _LOGGER.warning(f"Intento de reconexión #{intento+1} para {self.mac}")
+            _LOGGER.debug(f"Intento de reconexión #{intento+1} para {self.mac}")
             await asyncio.sleep(2 ** intento)  # 1s, 2s, 4s
             try:
                 await self.connect()
@@ -131,6 +132,14 @@ class HelloFairyBLE:
                 _LOGGER.warning(f"Falló reconexión #{intento+1}: {e}")
         return False
 
+    async def send_sync_command(self):
+        payload = bytearray([0xaa, 0x01, 0x08, 0x00, 0x00, 0x00, 0x02, 0x16, 0x00, 0x43, 0x0e])
+        char_uuid = await self.resolve_characteristic()
+        if char_uuid:
+            await self.client.write_gatt_char(char_uuid, payload, response=False)
+            _LOGGER.debug(f"[sync] Comando de sincronización enviado → {payload.hex()}")
+        else:
+            _LOGGER.error("[sync] No se pudo resolver UUID para sincronización")
 
 
     async def resolve_characteristic(self):
@@ -171,7 +180,7 @@ class HelloFairyBLE:
 
     async def send_preset(self, preset_id: int, brightness: Optional[int] = None):
         if not await self.safe_is_connected():
-            _LOGGER.warning("No conectado. Comando preset no enviado.")
+            _LOGGER.debug("No conectado. Comando preset no enviado.")
             return
 
         # Si no se especifica brillo, usar el último conocido
@@ -208,28 +217,39 @@ class HelloFairyBLE:
     def _notification_handler(self, sender, data):
         hex_data = data.hex()
         if hex_data != self.last_command:
-            _LOGGER.debug(f"[notify] Comando nuevo recibido: {hex_data}")
+            _LOGGER.info(f"[notify] Comando nuevo recibido: {hex_data}")
         else:
             _LOGGER.debug(f"[notify] Comando duplicado ignorado: {hex_data}")
         self.last_command = hex_data
-    
         self.last_seen = datetime.now()
 
-
+        # Decodificación del estado
         if hex_data.startswith("aa01") and hex_data[12:14] == "01":
             self.power_state = True
-            _LOGGER.debug(f"[notify] Estado inferido: 'encendido' ")
+            _LOGGER.debug(f"[notify] Estado inferido: 'encendido'")
         elif hex_data.startswith("aa01") and hex_data[12:14] == "00":
             self.power_state = False
-            _LOGGER.debug(f"[notify] Estado inferido: 'apagado' ")
+            _LOGGER.debug(f"[notify] Estado inferido: 'apagado'")
         elif hex_data.startswith("aa01"):
-            _LOGGER.debug(f"[notify] {hex_data[11:14]} - {hex_data[0:16]} ")
+            _LOGGER.debug(f"[notify] {hex_data[11:14]} - {hex_data[0:16]}")
+
+        # Actualización inmediata del estado en Home Assistant
+        if self.light_ref:
+            self.light_ref._is_on = self.power_state
+            self.light_ref.async_write_ha_state()
+            _LOGGER.debug(f"[notify] Estado de luz actualizado en HA")
+
+        if self.sensor_ref:
+            self.sensor_ref._state = self.last_command
+            self.sensor_ref.async_write_ha_state()
+            _LOGGER.debug(f"[notify] Estado de sensor actualizado en HA")
+
 
     
 
     async def read_remote_command(self):
         if not await self.safe_is_connected():
-            _LOGGER.warning("No conectado. Lectura remota no disponible.")
+            _LOGGER.debug("No conectado. Lectura remota no disponible.")
             return None
 
         # Ya no intentamos leer directamente

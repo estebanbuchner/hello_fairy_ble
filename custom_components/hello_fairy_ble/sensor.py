@@ -21,6 +21,7 @@ class HelloFairyRemoteSensor(SensorEntity):
         self._state = None
         self._attr_name = f"{name} Remote Command"
         self._attr_unique_id = f"hello_fairy_remote_{mac.replace(':', '')}"
+        self._device.sensor_ref = self      
 
     @property
     def state(self):
@@ -98,8 +99,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     async_add_entities([remote_sensor, connection_sensor])
 
-    # ✅ Encolar la actualización en el loop principal
-    def _update_remote_sensor(now):
-        hass.async_add_job(remote_sensor.async_schedule_update_ha_state)
+    async def _update_remote_sensor(now):
+        remote_sensor.async_schedule_update_ha_state()
+        connection_sensor.async_schedule_update_ha_state()
 
     async_track_time_interval(hass, _update_remote_sensor, timedelta(seconds=5))
+

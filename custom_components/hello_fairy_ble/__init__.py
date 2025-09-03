@@ -53,27 +53,40 @@ async def async_test_light_service(call):
         _LOGGER.warning(f"No se pudo conectar con {mac}")
 
 
-async def handle_send_raw_command(call):
-    mac = call.data["mac"]
-    raw = call.data["raw"]
+    async def handle_send_preset_command(call):
+        mac = call.data["mac"]
+        preset_id = int(call.data["preset_id"])
+        brightness = int(call.data.get("brightness", 100))  # default: 100%
 
-    try:
-        # Convertir string a bytearray
-        parts = [int(x.strip(), 16) for x in raw.split(",")]
-        payload = bytearray(parts)
+        try:
+            # Escalar brillo a rango 0–1000
+            b_scaled = max(1, min(brightness, 100)) * 10
+            hi = (b_scaled >> 8) & 0xFF
+            lo = b_scaled & 0xFF
 
-        device = get_ble_instance(mac)
-        await device.reconnect_if_needed()
+            # Construir payload
+            payload = bytearray([
+                0xaa, 0x03, 0x04, 0x02,
+                preset_id & 0xFF,
+                hi,
+                lo,
+                0x00  # checksum placeholder
+            ])
+            payload[-1] = sum(payload[:-1]) % 256  # checksum
 
-        char_uuid = await device.resolve_characteristic()
-        if char_uuid:
-            await device.client.write_gatt_char(char_uuid, payload, response=False)
-            _LOGGER.info(f"Comando raw enviado → {payload.hex()}")
-        else:
-            _LOGGER.error("No se pudo resolver UUID para comando raw")
+            device = get_ble_instance(mac)
+            await device.reconnect_if_needed()
 
-    except Exception as e:
-        _LOGGER.exception(f"Error al enviar comando raw: {e}")
+            char_uuid = await device.resolve_characteristic()
+            if char_uuid:
+                await device.client.write_gatt_char(char_uuid, payload, response=False)
+                _LOGGER.info(f"Comando preset enviado → {payload.hex()}")
+            else:
+                _LOGGER.error("No se pudo resolver UUID para comando preset")
+
+        except Exception as e:
+            _LOGGER.exception(f"Error al enviar comando preset: {e}")
+
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):

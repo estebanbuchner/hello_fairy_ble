@@ -35,7 +35,7 @@ Una vez configurado, se crea una entidad `light.hello_fairy_<nombre>`. Desde la 
 - Aplicar efectos
 - Ver disponibilidad del dispositivo
 
-## Comando para usarlo desde una automatizacion
+### Comando para usarlo desde una automatizacion
 
 
 ``` 
@@ -51,6 +51,17 @@ action:
       preset_id: 20
       brightness: 100
 mode: single
+
+
+``` 
+### enviar datos RAW
+
+
+``` 
+action: hello_fairy_ble.send_raw_command
+data:
+  mac: 11:11:00:30:4E:14
+  raw: aa,03,04,02,14,03,e8,b2
 
 
 ``` 

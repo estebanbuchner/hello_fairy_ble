@@ -26,31 +26,29 @@ async def async_setup(hass: HomeAssistant, config: dict):
 
 
 
-# ⬇️ Función de servicio definida fuera
-async def async_test_light_service(call):
-    mac = call.data.get("mac", "11:11:00:30:4E:14")
-    #device = HelloFairyBLE(mac)
-    device = get_ble_instance(mac)
 
-    if await device.connect():
+async def handle_send_raw_command(call):
+    mac = call.data["mac"]
+    raw = call.data["raw"]
 
-     
-        await device.connect()
-        await device.turn_on()
-        await asyncio.sleep(2)
+    try:
+        # Convertir string a bytearray
+        parts = [int(x.strip(), 16) for x in raw.split(",")]
+        payload = bytearray(parts)
 
-        await device.send_preset(41, brightness=80)  # Blue & White
-        await asyncio.sleep(10)
-        
-        await device.send_preset(58, brightness=100) # Orange Fireworks
-        await asyncio.sleep(10)
+        device = get_ble_instance(mac)
+        await device.reconnect_if_needed()
 
-        await device.turn_off()
-        await device.disconnect()
+        char_uuid = await device.resolve_characteristic()
+        if char_uuid:
+            await device.client.write_gatt_char(char_uuid, payload, response=False)
+            _LOGGER.info(f"Comando raw enviado → {payload.hex()}")
+        else:
+            _LOGGER.error("No se pudo resolver UUID para comando raw")
 
+    except Exception as e:
+        _LOGGER.exception(f"Error al enviar comando raw: {e}")
 
-    else:
-        _LOGGER.warning(f"No se pudo conectar con {mac}")
 
 
     async def handle_send_preset_command(call):
@@ -88,15 +86,14 @@ async def async_test_light_service(call):
             _LOGGER.exception(f"Error al enviar comando preset: {e}")
 
 
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
 
 
     await hass.config_entries.async_forward_entry_setups(entry, ["light", "sensor"])
 
-    hass.services.async_register(DOMAIN, "test_light", async_test_light_service)
     hass.services.async_register(DOMAIN, "send_raw_command", handle_send_raw_command)
+    hass.services.async_register(DOMAIN, "send_preset_command", handle_send_preset_command)
 
 
    

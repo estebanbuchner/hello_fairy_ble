@@ -35,6 +35,26 @@ Una vez configurado, se crea una entidad `light.hello_fairy_<nombre>`. Desde la 
 - Aplicar efectos
 - Ver disponibilidad del dispositivo
 
+## Comando para usarlo desde una automatizacion
+
+
+``` 
+alias: Activar efecto Fairy
+trigger:
+  - platform: state
+    entity_id: binary_sensor.movimiento_pasillo
+    to: "on"
+action:
+  - service: hello_fairy_ble.send_preset_command
+    data:
+      mac: "11:11:00:30:4E:14"
+      preset_id: 20
+      brightness: 100
+mode: single
+
+
+``` 
+
 ## Troubleshooting
 
 | Problema | Solución |

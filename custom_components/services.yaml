@@ -1,0 +1,41 @@
+send_raw_command:
+  description: "Envía un comando raw al dispositivo Hello Fairy BLE"
+  fields:
+    mac:
+      description: "MAC del dispositivo"
+      example: "11:11:00:30:4E:14"
+      required: true
+      selector:
+        text:
+    raw:
+      description: "Comando en formato hex separado por comas"
+      example: "aa,03,04,02,14,03,e8,b2"
+      required: true
+      selector:
+        text:
+
+send_preset_command:
+  description: "Envía un preset con brillo al dispositivo Hello Fairy BLE"
+  fields:
+    mac:
+      description: "MAC del dispositivo"
+      example: "11:11:00:30:4E:14"
+      required: true
+      selector:
+        text:
+    preset_id:
+      description: "ID del preset"
+      example: 20
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 255
+    brightness:
+      description: "Brillo en porcentaje (1–100)"
+      example: 100
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 100

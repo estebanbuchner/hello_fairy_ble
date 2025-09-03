@@ -76,7 +76,7 @@
 ## [0.2.8] - 2025-09-01
 - Bug en connect
 
-## [0.3.3] - 2025-09-01
+## [0.3.4] - 2025-09-01
 - Actualiza el estado de la luz en home assitant cuando se maneja la luz por el control remoto
 - "Descubre" el estado de la luz cuando se inicia home assistant. Esto lo hace mandando un comando que apaga el timer
 - Elimina warnings

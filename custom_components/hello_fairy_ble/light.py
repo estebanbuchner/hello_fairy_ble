@@ -78,29 +78,45 @@ class HelloFairyLight(LightEntity):
         await self._device.send_power(True)
         self._is_on = True
 
-        if ATTR_EFFECT in kwargs:
-            effect = kwargs[ATTR_EFFECT]
-            if effect in SUPPORTED_EFFECTS:
-                preset_id = SUPPORTED_EFFECTS.index(effect) + 1  # ← los presets empiezan en 1
-                await self._device.send_preset(preset_id, self._brightness * 100 // 255)
-                self._effect = effect
-                return
+        effect = kwargs.get(ATTR_EFFECT)
+        brightness = kwargs.get(ATTR_BRIGHTNESS, self._brightness)
+        hs_color = kwargs.get(ATTR_HS_COLOR)
+        _LOGGER.debug(f"[luces] Efecto: {effect}. Brillo: {brightness}. Color: {hs_color}")
 
-        if ATTR_BRIGHTNESS in kwargs and self._effect:
-            preset_id = SUPPORTED_EFFECTS.index(self._effect) + 1
-            brightness = kwargs[ATTR_BRIGHTNESS] * 100 // 255
-            await self._device.send_preset(preset_id, brightness)
-            self._brightness = kwargs[ATTR_BRIGHTNESS]
+        # Si solo hay brillo → aplicar sobre el modo activo
+        if ATTR_BRIGHTNESS in kwargs and not effect and not hs_color:
+            b_scaled = brightness * 100 // 255
+            if self._effect:
+                preset_id = SUPPORTED_EFFECTS.index(self._effect) + 1
+                await self._device.send_preset(preset_id, b_scaled)
+                _LOGGER.debug(f"[luces] send_preset (ajuste de brillo): preset_id {preset_id}. b_scaled: {b_scaled}")
+            elif self._hs_color:
+                h, s = self._hs_color
+                await self._device.send_hsv(h, s, b_scaled)
+                _LOGGER.debug(f"[luces] send_hsv (ajuste de brillo): h {h}. s: {s}. v: {b_scaled}")
+            self._brightness = brightness
             return
 
-        # Aplicar color si se especifica
-        if ATTR_HS_COLOR in kwargs or ATTR_BRIGHTNESS in kwargs:
-            h, s = kwargs.get(ATTR_HS_COLOR, self._hs_color)
-            v = kwargs.get(ATTR_BRIGHTNESS, self._brightness) * 100 // 255
+        # Si hay efecto → aplicar preset
+        if effect and effect in SUPPORTED_EFFECTS:
+            preset_id = SUPPORTED_EFFECTS.index(effect) + 1
+            b_scaled = brightness * 100 // 255
+            await self._device.send_preset(preset_id, b_scaled)
+            self._effect = effect
+            self._brightness = brightness
+            _LOGGER.debug(f"[luces] send_preset: preset_id {preset_id}. effect: {effect}")
+            return
+
+        # Si hay color → aplicar HSV
+        if hs_color:
+            h, s = hs_color
+            v = brightness * 100 // 255
             await self._device.send_hsv(h, s, v)
-            self._hs_color = (h, s)
-            self._brightness = kwargs.get(ATTR_BRIGHTNESS, self._brightness)
-            self._effect = None  # ← limpiamos efecto si se aplica color
+            _LOGGER.debug(f"[luces] send_hsv: h {h}. s: {s}. v: {v}")
+            self._hs_color = hs_color
+            self._brightness = brightness
+            self._effect = None
+            return
 
 
     async def async_turn_off(self, **kwargs):

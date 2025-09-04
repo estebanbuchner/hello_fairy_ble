@@ -35,6 +35,7 @@ async def handle_send_raw_command(call):
         # Convertir string a bytearray
         parts = [int(x.strip(), 16) for x in raw.split(",")]
         payload = bytearray(parts)
+        payload[-1] = sum(payload[:-1]) % 256  # checksum
 
         device = get_ble_instance(mac)
         await device.reconnect_if_needed()

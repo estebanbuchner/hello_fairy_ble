@@ -14,10 +14,9 @@ Esta basado en la integracion realizara para esphome: https://community.home-ass
 
 ## Instalación
 
-1. Agregar repositorio a HACS y descargar componente
-2. Reiniciar Home Assistant
-3. Ir a **Configuración → Dispositivos e Integraciones → Agregar**
-4. Buscar “Hello Fairy BLE” y seguir el asistente
+1. Ir a **Configuración → Dispositivos e Integraciones → Agregar**
+2. Agregar repositorio https://github.com/estebanbuchner/hello_fairy_ble/
+3. Buscar “Hello Fairy BLE” y seguir el asistente
 
 
 ## 🧪 Requisitos
@@ -25,7 +24,7 @@ Esta basado en la integracion realizara para esphome: https://community.home-ass
 - Home Assistant 2024.6 o superior
 - Python ≥ 3.10
 - Adaptador BLE compatible (probado con dongles USB y chipsets integrados)
-- Paquete `bleak>=0.21.1`
+- Paquete `bleak>=0.20.2`
 
 ##  Uso
 
@@ -78,29 +77,23 @@ data:
 
 # Funcionalidades Incluidas
 ## Light Entity
-### Funcionando
+
 * Encendido/apagado
 * Control de brillo 
 * Selección de presets (efectos)
-### Pendiente
-* Control de color (HSV → RGB)
-* Armar nombre de los presents
-* Al iniciar ver si la luz esta encendida o apagada
+* Control de color 
 
 ## Sensor de Conectividad
-### Funcionando
 * Reconexión automática si se pierde la conexión
+* Indicador de estado de conexion
 
-### Pendiente
-* binary_sensor.hello_fairy_connected: indica si el dispositivo está conectado
-* Multiples luces
 
-## Sensor de Comando IR (Pendiente)
+## Sensor de Comando IR 
 * sensor.hello_fairy_remote_command: muestra el último comando recibido desde el control remoto
 
 ## Configuración desde UI
 * Selección de dispositivo por MAC
-* Timeout de conexión configurable
+* Timeout de conexión configurable (pendiente)
 * Visualización de MAC en la interfaz
 
 # Flujo de Configuración
@@ -113,7 +106,6 @@ data:
 # Validación Técnica
 * Se usará bleak para manejar la conexión BLE
 * Se replicarán los comandos sendhsv, sendpatt y el ACK parsing
-* Se convertirá HSV a RGB usando la lógica del script hsv2rgb del archivo adjunto
 * Se expondrán los presets como select o number según convenga
 
 
@@ -145,7 +137,7 @@ custom_components/
 ### Entidad de luz (light.py)
 * Encendido/apagado
 * Brillo (si el dispositivo lo soporta)
-* Color HSV → RGB (usando la lógica del archivo adjunto)
+* Color 
 * Selección de escena/preset como select o number
 
  ### Sensores (sensor.py)

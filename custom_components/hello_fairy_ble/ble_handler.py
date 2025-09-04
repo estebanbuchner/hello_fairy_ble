@@ -157,26 +157,44 @@ class HelloFairyBLE:
             _LOGGER.exception("Error al resolver característica BLE")
         return None
 
+    def build_hsv_payload(self, h, s, v):
+        # Escalado según protocolo
+        hue = int(h)  # 0–360
+        sat = int(s * 10)  # 0–100 → 0–1000
+        val = int(v * 10)  # 0–100 → 0–1000
+
+        payload = bytearray([
+            0xaa, 0x03, 0x07, 0x01,
+            (hue >> 8) & 0xFF, hue & 0xFF,
+            (sat >> 8) & 0xFF, sat & 0xFF,
+            (val >> 8) & 0xFF, val & 0xFF
+        ])
+
+        checksum = sum(payload) % 256
+        payload.append(checksum)
+
+        return payload
+
+
     async def send_hsv(self, h, s, v):
         if not await self.safe_is_connected():
             _LOGGER.warning("No conectado. Comando HSV no enviado.")
             return
 
-        rgb = self.hsv_to_rgb(h, s, v)
-        payload = bytearray([0x7e, 0x00, 0x05, 0x03] + rgb + [0xef])
+        
+        payload = self.build_hsv_payload(h, s, v)
 
-        try:
-            await self.client.write_gatt_char(CHARACTERISTIC_UUID, payload)
-        except BleakCharacteristicNotFoundError:
-            _LOGGER.warning(f"UUID fijo falló: {CHARACTERISTIC_UUID}")
-            dynamic_uuid = await self.resolve_characteristic()
-            if dynamic_uuid:
-                _LOGGER.warning(f"Usando UUID dinámico: {dynamic_uuid}")
-                await self.client.write_gatt_char(dynamic_uuid, payload)
-            else:
-                _LOGGER.error("No se pudo resolver UUID dinámico para HSV")
+            
+        dynamic_uuid = await self.resolve_characteristic()
+        if dynamic_uuid:
+            _LOGGER.warning(f"Usando UUID dinámico: {dynamic_uuid}")
+            await self.client.write_gatt_char(dynamic_uuid, payload)
+            _LOGGER.debug(f"Comando HSV enviado → {payload.hex()}")
+            _LOGGER.debug(f"Sent HSV: {h},{s},{v} ")
+
         else:
-            _LOGGER.debug(f"Sent HSV: {h},{s},{v} → RGB {rgb}")
+            _LOGGER.error("No se pudo resolver UUID dinámico para HSV")
+
 
     async def send_preset(self, preset_id: int, brightness: Optional[int] = None):
         if not await self.safe_is_connected():
@@ -208,9 +226,9 @@ class HelloFairyBLE:
         if not self.notifications_active:
             await self.client.start_notify(CHARACTERISTIC_UUID_NOTIFY, self._notification_handler)
             self.notifications_active = True
-            _LOGGER.info("Agrego suscripcion a notificaciones")
+            _LOGGER.debug("Agrego suscripcion a notificaciones")
         else:
-            _LOGGER.warning("Ignoro suscripcion a notificaciones")
+            _LOGGER.debug("Ignoro suscripcion a notificaciones")
 
 
 
@@ -256,26 +274,6 @@ class HelloFairyBLE:
         return getattr(self, "last_command", None)
 
 
-
-    def hsv_to_rgb(self, h, s, v):
-        h = float(h)
-        s = float(s) / 100
-        v = float(v) / 100
-        i = int(h / 60) % 6
-        f = (h / 60) - i
-        p = v * (1 - s)
-        q = v * (1 - f * s)
-        t = v * (1 - (1 - f) * s)
-        rgb_map = {
-            0: (v, t, p),
-            1: (q, v, p),
-            2: (p, v, t),
-            3: (p, q, v),
-            4: (t, p, v),
-            5: (v, p, q),
-        }
-        r, g, b = rgb_map[i]
-        return [int(r * 255), int(g * 255), int(b * 255)]
 
     @staticmethod
     async def discover_devices():

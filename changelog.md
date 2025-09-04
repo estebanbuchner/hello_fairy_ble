@@ -81,3 +81,6 @@
 - "Descubre" el estado de la luz cuando se inicia home assistant. Esto lo hace mandando un comando que apaga el timer
 - Elimina warnings
 - Mejora en comando para enviar presets
+
+## [0.3.5] - 2025-09-04
+- Correccion en manejo de colores y brillo

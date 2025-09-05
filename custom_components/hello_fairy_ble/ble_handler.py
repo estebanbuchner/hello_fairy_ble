@@ -5,6 +5,7 @@ from bleak.exc import BleakCharacteristicNotFoundError
 from .const import CHARACTERISTIC_UUID, DEVICE_NAME_PREFIX, DEFAULT_TIMEOUT, CHARACTERISTIC_UUID_WRITE, CHARACTERISTIC_UUID_NOTIFY
 from typing import Optional, Union, List, Dict, Any
 from datetime import datetime
+rom bleak_retry_connector import establish_connection
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,7 +67,11 @@ class HelloFairyBLE:
                 self.connected = False
                 return False
 
-            await asyncio.wait_for(self.client.connect(timeout=self.timeout), timeout=self.timeout)
+            #await asyncio.wait_for(self.client.connect(timeout=self.timeout), timeout=self.timeout)
+
+
+            self.client = await establish_connection(  BleakClient(self.mac), self.mac,  max_attempts=3,  timeout=self.timeout, name="HelloFairyBLE" )
+
 
             self.connected = await self.safe_is_connected()
             _LOGGER.info(f"Conectado a Hello Fairy: {self.mac} → {self.connected}")
@@ -117,20 +122,38 @@ class HelloFairyBLE:
         finally:
             self.connected = False
 
+
     async def reconnect_if_needed(self):
+        if getattr(self, "_reconnecting", False):
+            _LOGGER.debug(f"[reconnect] Ya hay una reconexión en curso para {self.mac}")
+            return False
+        self._reconnecting = True
         self.reconnect_attempts += 1
         self.last_reconnect_at = datetime.now()
 
+        if not await self.is_device_visible(self.mac):
+            _LOGGER.warning(f"[reconnect] Dispositivo {self.mac} no visible en escaneo BLE. Se omite reconexión.")
+            self._reconnecting = False
+            return False
+
         for intento in range(3):
             if await self.safe_is_connected():
+                self._reconnecting = False
                 return True
             _LOGGER.debug(f"Intento de reconexión #{intento+1} para {self.mac}")
-            await asyncio.sleep(2 ** intento)  # 1s, 2s, 4s
+            await asyncio.sleep(2 ** intento)
             try:
                 await self.connect()
             except Exception as e:
                 _LOGGER.warning(f"Falló reconexión #{intento+1}: {e}")
-        return False
+
+        self._reconnecting = False
+        if self.connected:
+            _LOGGER.info(f"[reconnect] Reconexión exitosa con {self.mac}")
+        else:
+            _LOGGER.error(f"[reconnect] Fallaron todos los intentos de reconexión con {self.mac}")
+        return self.connected
+
 
     async def send_sync_command(self):
         payload = bytearray([0xaa, 0x01, 0x08, 0x00, 0x00, 0x00, 0x02, 0x16, 0x00, 0x43, 0x0e])
@@ -143,10 +166,9 @@ class HelloFairyBLE:
 
 
     async def resolve_characteristic(self):
-        if not self.client.services:
-            _LOGGER.warning(f"No hay servicios disponibles para {self.mac}")
+        if not self.client or not hasattr(self.client, "services") or not self.client.services:
+            _LOGGER.warning(f"[resolve] Cliente BLE no disponible o sin servicios para {self.mac}")
             return None
-
         try:
             for service in self.client.services:
                 for char in service.characteristics:
@@ -156,6 +178,7 @@ class HelloFairyBLE:
         except Exception:
             _LOGGER.exception("Error al resolver característica BLE")
         return None
+
 
     def build_hsv_payload(self, h, s, v):
         # Escalado según protocolo

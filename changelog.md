@@ -84,3 +84,6 @@
 
 ## [0.3.5] - 2025-09-04
 - Correccion en manejo de colores y brillo
+
+## [0.3.6] - 2025-09-04
+- Mejoras en la conexion para detectar antes y mejor si nos desconectamos y mejoras en concurrencia en la conexion.

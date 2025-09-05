@@ -87,3 +87,7 @@
 
 ## [0.3.6] - 2025-09-04
 - Mejoras en la conexion para detectar antes y mejor si nos desconectamos y mejoras en concurrencia en la conexion.
+
+
+## [0.3.7] - 2025-09-05
+- Corrije errores de la ultima liberacion.

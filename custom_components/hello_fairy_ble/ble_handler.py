@@ -5,7 +5,7 @@ from bleak.exc import BleakCharacteristicNotFoundError
 from .const import CHARACTERISTIC_UUID, DEVICE_NAME_PREFIX, DEFAULT_TIMEOUT, CHARACTERISTIC_UUID_WRITE, CHARACTERISTIC_UUID_NOTIFY
 from typing import Optional, Union, List, Dict, Any
 from datetime import datetime
-rom bleak_retry_connector import establish_connection
+from bleak_retry_connector import establish_connection
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,43 +57,47 @@ class HelloFairyBLE:
         return any(d.address.lower() == mac.lower() for d in devices)
 
 
+
     async def connect(self):
         try:
             _LOGGER.debug(f"Intentando conectar con {self.mac}")
 
-             # 🔍 Verificar visibilidad BLE antes de conectar
-            if not await self.is_device_visible(self.mac):
+            # 🔍 Verificar visibilidad BLE antes de conectar
+            devices = await BleakScanner.discover()
+            target = next((d for d in devices if d.address.lower() == self.mac.lower()), None)
+
+            if not target:
                 _LOGGER.debug(f"{self.mac} no visible en escaneo BLE. Se omite conexión.")
                 self.connected = False
                 return False
 
-            #await asyncio.wait_for(self.client.connect(timeout=self.timeout), timeout=self.timeout)
-
-
-            self.client = await establish_connection(  BleakClient(self.mac), self.mac,  max_attempts=3,  timeout=self.timeout, name="HelloFairyBLE" )
-
+            # ✅ Usar bleak-retry-connector con el dispositivo escaneado
+            self.client = await establish_connection(
+                BleakClient,
+                target,
+                max_attempts=3,
+                timeout=self.timeout,
+                name="HelloFairyBLE"
+            )
 
             self.connected = await self.safe_is_connected()
             _LOGGER.info(f"Conectado a Hello Fairy: {self.mac} → {self.connected}")
 
             if self.connected:
-                 
-                self._on_connect() 
-
+                self._on_connect()
                 await self.subscribe_to_notifications()
-                await self.send_sync_command()  
-                                
+                await self.send_sync_command()
+
                 # ✅ Acceso directo a servicios sin await
                 services = self.client.services
-
-                for service in self.client.services:
+                for service in services:
                     _LOGGER.debug(f"Servicio: {service.uuid}")
                     for char in service.characteristics:
                         _LOGGER.debug(f"  Char: {char.uuid} → {char.properties}")
 
                 has_characteristics = any(
                     hasattr(s, "characteristics") and len(s.characteristics) > 0
-                    for s in self.client.services
+                    for s in services
                 )
                 if not has_characteristics:
                     _LOGGER.warning(f"{self.mac} conectado pero sin características en los servicios")
@@ -102,15 +106,11 @@ class HelloFairyBLE:
 
             return self.connected
 
-        except asyncio.TimeoutError:
-            _LOGGER.error(f"Timeout al conectar con {self.mac}")
-            self.connected = False
-            return False
-
         except Exception:
             _LOGGER.exception(f"Error general al conectar con {self.mac}")
             self.connected = False
             return False
+
 
     async def disconnect(self):
         try:
@@ -210,7 +210,7 @@ class HelloFairyBLE:
             
         dynamic_uuid = await self.resolve_characteristic()
         if dynamic_uuid:
-            _LOGGER.warning(f"Usando UUID dinámico: {dynamic_uuid}")
+            _LOGGER.debug(f"Usando UUID dinámico: {dynamic_uuid}")
             await self.client.write_gatt_char(dynamic_uuid, payload)
             _LOGGER.debug(f"Comando HSV enviado → {payload.hex()}")
             _LOGGER.debug(f"Sent HSV: {h},{s},{v} ")
